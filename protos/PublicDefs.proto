@@ -36,10 +36,26 @@ message AllocatableResource {
   uint64 memory_sw_limit_bytes = 3;
 }
 
-message DedicatedResource {}
+message DeviceCountMap{
+  map <string, uint64> device_count_map = 1;
+  uint64 total = 2;
+}
+
+message Slots{
+  repeated string slot = 1;
+}
+
+message DedicatedResourceInNode{
+  map <string /*device name*/, Slots> name_slots_map = 1;
+}
+
+message DedicatedResource {
+  map <string /*craned id*/, DedicatedResourceInNode> each_node_gres = 1;
+}
 
 message Resources {
   AllocatableResource allocatable_resource = 1;
+  DedicatedResource dedicated_resource = 2;
 }
 
 enum PartitionState {
@@ -81,6 +97,7 @@ message TaskToCtld {
   google.protobuf.Duration time_limit = 1;
 
   string partition_name = 2;
+  //the dedicated_resources of the field will not be use
   Resources resources = 3;
 
   TaskType type = 4;
@@ -110,6 +127,8 @@ message TaskToCtld {
 
   string excludes = 34;
   string nodelist = 35;
+
+  map<string, DeviceCountMap> gres_count_map = 36;
 }
 
 message TaskInEmbeddedDb {
@@ -218,6 +237,7 @@ message TaskInfo {
     string pending_reason = 35;
     string craned_list = 36;
   }
+  map<string, DeviceCountMap> gres_per_node = 38;
 }
 
 message PartitionInfo {
@@ -233,6 +253,9 @@ message PartitionInfo {
   uint64 total_mem = 9;
   uint64 avail_mem = 10;
   uint64 alloc_mem = 11;
+  map<string, DeviceCountMap> device = 12;
+  map<string, DeviceCountMap> alloc_device = 13;
+  map<string, DeviceCountMap> avail_device = 14;
 }
 
 message CranedInfo {
@@ -246,6 +269,9 @@ message CranedInfo {
   uint64 free_mem = 8;
   repeated string partition_names = 9;
   uint32 running_task_num = 10;
+  map<string, DeviceCountMap> device = 12;
+  map<string, DeviceCountMap> alloc_device = 13;
+  map<string, DeviceCountMap> avail_device = 14;
 }
 
 message TrimmedPartitionInfo {

@@ -21,6 +21,9 @@
 #include <google/protobuf/util/delimited_message_util.h>
 #include <sys/stat.h>
 
+#include "ResourceAllocators.h"
+#include "crane/FdFunctions.h"
+#include "crane/String.h"
 #include "CforedClient.h"
 #include "crane/OS.h"
 #include "protos/CraneSubprocess.pb.h"
@@ -778,6 +781,24 @@ CraneErr TaskManager::SpawnProcessInInstance_(
                                         (1024 * 1024)));
     env_vec.emplace_back("CRANE_JOB_ID",
                          std::to_string(instance->task.task_id()));
+
+    if (instance->task.resources()
+            .dedicated_resource()
+            .each_node_gres()
+            .contains(g_config.Hostname)) {
+      uint64_t cuda_count = 0;
+      for (const auto& [device_name, slots] : instance->task.resources()
+                                                  .dedicated_resource()
+                                                  .each_node_gres()
+                                                  .at(g_config.Hostname)
+                                                  .name_slots_map()) {
+        cuda_count += slots.slot().size();
+      }
+      if (cuda_count != 0) {
+        env_vec.emplace_back("CUDA_VISIBLE_DEVICES",
+                             util::CudaVisibleDevices(cuda_count));
+      }
+    }
 
     if (CheckIfInstanceTypeIsCrun_(instance) &&
         !instance->task.interactive_meta().term_env().empty()) {

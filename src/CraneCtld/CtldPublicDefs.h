@@ -66,6 +66,7 @@ struct Config {
   struct Node {
     uint32_t cpu;
     uint64_t memory_bytes;
+    DedicatedResource dedicated_resource;
   };
 
   struct Partition {
@@ -166,7 +167,9 @@ struct CranedMeta {
 
   // total = avail + in-use
   Resources res_total;  // A copy of res in CranedStaticMeta,
-  // just for convenience.
+  // map from slot to type
+  std::unordered_map<DedicatedResourceInNode::SlotType, std::string>
+      slot_to_type_map;
   Resources res_avail;
   Resources res_in_use;
   bool drain{false};
@@ -249,7 +252,10 @@ struct TaskInCtld {
 
   PartitionId partition_id;
   Resources resources;
-
+  std::unordered_map<
+      std::string,
+      std::pair<uint64_t, std::unordered_map<std::string, uint64_t>>>
+      request_gres;
   crane::grpc::TaskType type;
 
   uid_t uid;
@@ -427,6 +433,14 @@ struct TaskInCtld {
     partition_id = (val.partition_name().empty()) ? g_config.DefaultPartition
                                                   : val.partition_name();
     resources.allocatable_resource = val.resources().allocatable_resource();
+
+    for (const auto& [name, type_count_map] : val.gres_count_map()) {
+      std::unordered_map<std::string, uint64_t> tmp(
+          type_count_map.device_count_map().begin(),
+          type_count_map.device_count_map().end());
+      request_gres.emplace(name, std::make_pair(type_count_map.total(), tmp));
+    }
+
     time_limit = absl::Seconds(val.time_limit().seconds());
 
     type = val.type();

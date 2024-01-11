@@ -24,6 +24,11 @@ class EnableSpdlogTraceLevel {
  public:
   EnableSpdlogTraceLevel() { spdlog::set_level(spdlog::level::trace); }
 };
+class DedicatedResourceAllocator {
+ public:
+  static bool Allocate(const crane::grpc::DedicatedResource& request_resource,
+                       util::Cgroup* cg);
+};
 
 [[maybe_unused]] inline EnableSpdlogTraceLevel enableSpdlogTraceLevel;
 
