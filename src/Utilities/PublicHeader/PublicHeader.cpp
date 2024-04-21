@@ -130,11 +130,11 @@ bool operator==(const DedicatedResource& lhs, const DedicatedResource& rhs) {
       const auto& rhs_name_slot_map =
           rhs.craned_id_gres_map.at(key).name_slots_map;
       std::unordered_set<std::string> inner_keys;
-      std::ranges::for_each(lhs_name_slot_map, [&keys](const auto& kv) {
-        keys.emplace(kv.first);
+      std::ranges::for_each(lhs_name_slot_map, [&inner_keys](const auto& kv) {
+        inner_keys.emplace(kv.first);
       });
-      std::ranges::for_each(rhs_name_slot_map, [&keys](const auto& kv) {
-        keys.emplace(kv.first);
+      std::ranges::for_each(rhs_name_slot_map, [&inner_keys](const auto& kv) {
+        inner_keys.emplace(kv.first);
       });
       for (const auto& inner_key : inner_keys) {
         bool inner_lhs_contains = lhs_name_slot_map.contains(key);
