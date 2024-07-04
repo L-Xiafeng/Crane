@@ -36,17 +36,25 @@ message AllocatableResource {
   uint64 memory_sw_limit_bytes = 3;
 }
 
-message DeviceCountMap{
-  map <string, uint64> device_count_map = 1;
+message TypeCountMap{
+  map <string/*Type*/, uint64> type_count_map = 1;
   uint64 total = 2;
 }
 
+message DeviceMap{
+  map<string/*name*/, TypeCountMap> name_type_map = 1;
+}
+
 message Slots{
-  repeated string slot = 1;
+  repeated string slots = 1;
+}
+
+message DeviceTypeSlotsMap{
+  map<string/*Type*/, Slots/*index of slot*/> type_slots_map = 1;
 }
 
 message DedicatedResourceInNode{
-  map <string /*device name*/, Slots> name_slots_map = 1;
+  map <string /*device name*/, DeviceTypeSlotsMap> name_type_map = 1;
 }
 
 message DedicatedResource {
@@ -55,7 +63,10 @@ message DedicatedResource {
 
 message Resources {
   AllocatableResource allocatable_resource = 1;
-  DedicatedResource dedicated_resource = 2;
+  oneof dedicated_resource {
+    DedicatedResource actual_dedicated_resource = 2;
+    DeviceMap dedicated_resource_req = 3;
+  }
 }
 
 enum PartitionState {
@@ -127,8 +138,6 @@ message TaskToCtld {
 
   string excludes = 34;
   string nodelist = 35;
-
-  map<string, DeviceCountMap> gres_count_map = 36;
 }
 
 message TaskInEmbeddedDb {
@@ -237,7 +246,7 @@ message TaskInfo {
     string pending_reason = 35;
     string craned_list = 36;
   }
-  map<string, DeviceCountMap> gres_per_node = 38;
+  DeviceMap gres_req = 38;
 }
 
 message PartitionInfo {
@@ -253,9 +262,9 @@ message PartitionInfo {
   uint64 total_mem = 9;
   uint64 avail_mem = 10;
   uint64 alloc_mem = 11;
-  map<string, DeviceCountMap> device = 12;
-  map<string, DeviceCountMap> alloc_device = 13;
-  map<string, DeviceCountMap> avail_device = 14;
+  DeviceMap device = 12;
+  DeviceMap alloc_device = 13;
+  DeviceMap avail_device = 14;
 }
 
 message CranedInfo {
@@ -269,9 +278,9 @@ message CranedInfo {
   uint64 free_mem = 8;
   repeated string partition_names = 9;
   uint32 running_task_num = 10;
-  map<string, DeviceCountMap> device = 12;
-  map<string, DeviceCountMap> alloc_device = 13;
-  map<string, DeviceCountMap> avail_device = 14;
+  DeviceMap device = 12;
+  DeviceMap alloc_device = 13;
+  DeviceMap avail_device = 14;
 }
 
 message TrimmedPartitionInfo {

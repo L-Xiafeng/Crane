@@ -353,6 +353,7 @@ void ParseConfig(int argc, char** argv) {
                  gres_it != node["gres"].end(); ++gres_it) {
               const auto& gres_node = gres_it->as<YAML::Node>();
               const auto& device_name = gres_node["name"].as<std::string>();
+              const auto& device_type = gres_node["type"].as<std::string>();
               std::list<std::string> device_path_list;
               if (!util::ParseHostList(gres_node["file"].Scalar(),
                                        &device_path_list)) {
@@ -362,15 +363,15 @@ void ParseConfig(int argc, char** argv) {
               CRANE_TRACE("gres file name list parsed: {}",
                           fmt::join(device_path_list, ", "));
               for (const auto& device_path : device_path_list) {
-                resourceInNode.name_slots_map[device_name].emplace(device_path);
+                resourceInNode.name_type_slots_map[device_name][device_type]
+                    .emplace(device_path);
               }
             }
           }
 
           for (auto&& name : name_list) {
             g_config.Nodes[name] = node_ptr;
-            g_config.Nodes[name]->dedicated_resource.craned_id_gres_map[name] =
-                resourceInNode;
+            g_config.Nodes[name]->dedicated_resource[name] = resourceInNode;
           }
         }
       }

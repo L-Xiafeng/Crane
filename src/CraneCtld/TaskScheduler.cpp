@@ -1530,6 +1530,8 @@ void TaskScheduler::QueryTasksInRam(
     task_it->set_alloc_cpu(
         static_cast<double>(task.resources.allocatable_resource.cpu_count) *
         task.node_num);
+    task_it->mutable_gres_req()->CopyFrom(
+        task.TaskToCtld().resources().dedicated_resource_req());
     task_it->set_exit_code(0);
     task_it->set_priority(task.cached_priority);
 
@@ -1887,13 +1889,13 @@ bool MinLoadFirst::CalculateRunningNodesAndStartTime_(
       uint64_t total_count = 0;
       auto& this_alloc_gres =
           task->resources.dedicated_resource.craned_id_gres_map[craned_id]
-              .name_slots_map[device_name];
+              .name_type_slots_map[device_name];
       // Todo: here the requested res will not always be available now,need a
       // better way to choose the gres.
       auto avail_slots =
           craned_meta->res_total.dedicated_resource.craned_id_gres_map
               .at(craned_id)
-              .name_slots_map.at(device_name);
+              .name_type_slots_map.at(device_name);
 
       for (const auto& [device_type, device_count] :
            device_type_count_map.second) {
@@ -1923,7 +1925,7 @@ bool MinLoadFirst::CalculateRunningNodesAndStartTime_(
         }
       }
       task->resources.dedicated_resource.craned_id_gres_map[craned_id]
-          .name_slots_map[device_name]
+          .name_type_slots_map[device_name]
           .insert(std::move_iterator(this_alloc_gres.begin()),
                   std::move_iterator(this_alloc_gres.end()));
     }

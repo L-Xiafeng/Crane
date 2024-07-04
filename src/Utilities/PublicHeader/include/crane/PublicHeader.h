@@ -160,6 +160,8 @@ inline std::string_view CraneErrStr(CraneErr err) {
 using PartitionId = std::string;
 using CranedId = std::string;
 using cpu_t = fpm::fixed_24_8;
+// device path e.g.,/dev/nvidia0
+using SlotId = std::string;
 
 // Model the allocatable resources on a craned node.
 // It contains CPU and memory by now.
@@ -214,21 +216,21 @@ struct Device {
 bool operator==(const Device& lhs, const Device& rhs);
 
 struct DedicatedResourceInNode {
-  using SlotType = std::string;
-
-  std::unordered_map<std::string, std::set<SlotType>> name_slots_map;
+  // config: gpu:a100 whit file /dev/nvidia[0-3]
+  // parsed: name:gpu,slot:a100,index:/dev/nvidia0,....,/dev/nvidia3
+  std::unordered_map<
+      std::string /*name*/,
+      std::unordered_map<std::string /*type*/, std::set<SlotId> /*index*/>>
+      name_type_slots_map;
   DedicatedResourceInNode& operator+=(const DedicatedResourceInNode& rhs);
   DedicatedResourceInNode& operator-=(const DedicatedResourceInNode& rhs);
-  std::set<SlotType>& operator[](const std::string& device_name);
+  std::unordered_map<std::string, std::set<SlotId>>& operator[](
+      const std::string& device_name);
+  bool contains(const std::string& device_name) const;
   bool empty() const;
-  // this >= other
-  bool compareGE(
-      const std::unordered_map<
-          std::string,
-          std::pair<uint64_t, std::unordered_map<std::string, uint64_t>>>&
-          other,
-      const std::unordered_map<DedicatedResourceInNode::SlotType, std::string>&
-          slot_2_type_map) const;
+  bool empty(const std::string& device_name) const;
+  bool empty(const std::string& device_name,
+             const std::string& device_type) const;
 };
 
 bool operator<=(const DedicatedResourceInNode& lhs,
@@ -239,7 +241,8 @@ bool operator<=(const DedicatedResourceInNode& lhs,
  * It contains GPU, NIC, etc.
  */
 struct DedicatedResource {
-  std::unordered_map<std::string, DedicatedResourceInNode> craned_id_gres_map;
+  std::unordered_map<CranedId /*craned id*/, DedicatedResourceInNode>
+      craned_id_gres_map;
   DedicatedResource() = default;
   explicit DedicatedResource(const crane::grpc::DedicatedResource& rhs);
   DedicatedResource& operator+=(const DedicatedResource& rhs);
@@ -247,8 +250,9 @@ struct DedicatedResource {
   DedicatedResourceInNode& operator[](const std::string& craned_id);
   DedicatedResourceInNode& at(const std::string& craned_id);
   const DedicatedResourceInNode& at(const std::string& craned_id) const;
+  bool contains(const CranedId& craned_id) const;
   bool Empty() const;
-  crane::grpc::DedicatedResource GenerateGrpcType() const;
+  operator crane::grpc::DedicatedResource() const;
 };
 
 bool operator<=(const DedicatedResource& lhs, const DedicatedResource& rhs);

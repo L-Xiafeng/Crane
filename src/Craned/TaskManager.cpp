@@ -791,7 +791,7 @@ CraneErr TaskManager::SpawnProcessInInstance_(
                                                   .dedicated_resource()
                                                   .each_node_gres()
                                                   .at(g_config.Hostname)
-                                                  .name_slots_map()) {
+                                                  .name_type_slots_map()) {
         cuda_count += slots.slot().size();
       }
       if (cuda_count != 0) {

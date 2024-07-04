@@ -69,15 +69,14 @@ bool operator==(const Device& lhs, const Device& rhs) {
 
 bool operator<=(const DedicatedResource& lhs, const DedicatedResource& rhs) {
   for (const auto& [lhs_node_id, lhs_gres] : lhs.craned_id_gres_map) {
-    for (const auto& [lhs_name, lhs_slots] : lhs_gres.name_slots_map) {
-      if (rhs.craned_id_gres_map.contains(lhs_node_id) &&
-          rhs.craned_id_gres_map.at(lhs_node_id)
-              .name_slots_map.contains(lhs_name)) {
-        const auto& rhs_slots =
-            rhs.craned_id_gres_map.at(lhs_node_id).name_slots_map.at(lhs_name);
-        if (!std::ranges::includes(rhs_slots, lhs_slots)) return false;
+    for (const auto& [lhs_name, lhs_type_slots_map] :
+         lhs_gres.name_type_slots_map) {
+      if (rhs.contains(lhs_node_id) && rhs.at(lhs_node_id).contains(lhs_name)) {
+        const auto& rhs_slots = rhs.craned_id_gres_map.at(lhs_node_id)
+                                    .name_type_slots_map.at(lhs_name);
+        if (!std::ranges::includes(rhs_slots, lhs_type_slots_map)) return false;
       } else {
-        if (!lhs_slots.empty()) return false;
+        if (!lhs_type_slots_map.empty()) return false;
       }
     }
   }
@@ -89,8 +88,8 @@ bool operator<(const DedicatedResource& lhs, const DedicatedResource& rhs) {
   for (const auto& [rhs_craned_id, rhs_gres] : rhs.craned_id_gres_map) {
     if (lhs.craned_id_gres_map.contains(rhs_craned_id)) {
       const auto& lhs_name_slots_map =
-          lhs.craned_id_gres_map.at(rhs_craned_id).name_slots_map;
-      const auto& rhs_name_slots_map = rhs_gres.name_slots_map;
+          lhs.craned_id_gres_map.at(rhs_craned_id).name_type_slots_map;
+      const auto& rhs_name_slots_map = rhs_gres.name_type_slots_map;
 
       for (const auto& [rhs_name, rhs_slots] : rhs_name_slots_map) {
         if (!lhs_name_slots_map.contains(rhs_name)) {
@@ -126,9 +125,9 @@ bool operator==(const DedicatedResource& lhs, const DedicatedResource& rhs) {
     bool rhs_contains = rhs.craned_id_gres_map.contains(key);
     if (lhs_contains && rhs_contains) {
       const auto& lhs_name_slot_map =
-          lhs.craned_id_gres_map.at(key).name_slots_map;
+          lhs.craned_id_gres_map.at(key).name_type_slots_map;
       const auto& rhs_name_slot_map =
-          rhs.craned_id_gres_map.at(key).name_slots_map;
+          rhs.craned_id_gres_map.at(key).name_type_slots_map;
       std::unordered_set<std::string> inner_keys;
       std::ranges::for_each(lhs_name_slot_map, [&inner_keys](const auto& kv) {
         inner_keys.emplace(kv.first);
@@ -171,12 +170,13 @@ bool operator==(const DedicatedResource& lhs, const DedicatedResource& rhs) {
 
 bool operator<=(const DedicatedResourceInNode& lhs,
                 const DedicatedResourceInNode& rhs) {
-  for (const auto& [lhs_name, lhs_slots] : lhs.name_slots_map) {
-    if (rhs.name_slots_map.contains(lhs_name)) {
-      const auto& rhs_slots = rhs.name_slots_map.at(lhs_name);
+  for (const auto& [lhs_name, lhs_type_slots_map] : lhs.name_type_slots_map) {
+    if (rhs.contains(lhs_name)) {
+      const auto& rhs_slots = rhs.name_type_slots_map.at(lhs_name);
       if (!std::ranges::includes(rhs_slots, lhs_slots)) return false;
     } else {
-      if (!lhs_slots.empty()) return false;
+      if (!std::ranges::for_each(lhs_type_slots_map, [](const auto& kv) {}))
+        return false;
     }
   }
   return true;
@@ -255,6 +255,9 @@ DedicatedResource& DedicatedResource::operator-=(const DedicatedResource& rhs) {
 
   return *this;
 }
+bool DedicatedResource::contains(const CranedId& craned_id) const {
+  return craned_id_gres_map.contains(craned_id);
+}
 
 bool DedicatedResource::Empty() const {
   if (craned_id_gres_map.empty()) return true;
@@ -266,23 +269,28 @@ DedicatedResource::DedicatedResource(
     const crane::grpc::DedicatedResource& rhs) {
   for (const auto& [craned_id, gres] : rhs.each_node_gres()) {
     auto& this_craned_gres_map =
-        this->craned_id_gres_map[craned_id].name_slots_map;
-    for (const auto& [name, slots] : gres.name_slots_map()) {
-      for (const auto& slot : slots.slot()) {
-        this_craned_gres_map[name].emplace(slot);
-      }
+        this->craned_id_gres_map[craned_id].name_type_slots_map;
+    for (const auto& [name, type_slots_map] : gres.name_type_map()) {
+      for (const auto& [type, slots] : type_slots_map.type_slots_map())
+        this_craned_gres_map[name][type].insert(slots.slots().begin(),
+                                                slots.slots().end());
     }
   }
 }
 
-crane::grpc::DedicatedResource DedicatedResource::GenerateGrpcType() const {
+DedicatedResource::operator crane::grpc::DedicatedResource() const {
   crane::grpc::DedicatedResource val{};
   for (const auto& [craned_id, gres] : craned_id_gres_map) {
-    for (const auto& [gres_name, gres_slots] : gres.name_slots_map) {
-      (*(*val.mutable_each_node_gres())[craned_id]
-            .mutable_name_slots_map())[gres_name]
-          .mutable_slot()
-          ->Add(gres_slots.begin(), gres_slots.end());
+    for (const auto& [name, type_slots_map] : gres.name_type_slots_map) {
+      {
+        for (const auto& [type, slots] : type_slots_map) {
+          (*(*(*val.mutable_each_node_gres())[craned_id]
+                  .mutable_name_type_map())[name]
+                .mutable_type_slots_map())[type]
+              .mutable_slots()
+              ->Assign(slots.begin(), slots.end());
+        }
+      }
     }
   }
   return val;
@@ -318,6 +326,7 @@ GetDeviceFileMajorMinorOpType(const std::string& path) {
     return std::nullopt;
   }
 }
+
 bool Device::Init() {
   const auto& device_major_minor_optype_option =
       GetDeviceFileMajorMinorOpType(path);
@@ -333,6 +342,7 @@ bool Device::Init() {
   }
   return true;
 }
+
 bool Device::Init(const std::string& device_name,
                   const std::string& device_type,
                   const std::string& device_path) {
@@ -358,55 +368,58 @@ Device::Device(const std::string& device_name, const std::string& device_type,
     : name(device_name), type(device_type), path(device_path){};
 
 bool DedicatedResourceInNode::empty() const {
-  if (name_slots_map.empty()) return true;
-  return std::ranges::all_of(name_slots_map,
+  if (name_type_slots_map.empty()) return true;
+  return std::ranges::all_of(name_type_slots_map, [](const auto& kv) {
+    return kv.second.empty() ||
+           std::ranges::all_of(kv.second, [](const auto& inner_kv) {
+             return inner_kv.second.empty();
+           });
+  });
+}
+
+bool DedicatedResourceInNode::empty(const std::string& device_name) const {
+  if (name_type_slots_map.empty() || !name_type_slots_map.contains(device_name))
+    return true;
+  return std::ranges::all_of(name_type_slots_map.at(device_name),
                              [](const auto& kv) { return kv.second.empty(); });
+}
+bool DedicatedResourceInNode::empty(const std::string& device_name,
+                                    const std::string& device_type) const {
+  if (name_type_slots_map.empty() ||
+      !name_type_slots_map.contains(device_name) ||
+      !name_type_slots_map.at(device_name).contains(device_type))
+    return true;
+  return name_type_slots_map.at(device_name).at(device_type).empty();
 }
 
 DedicatedResourceInNode& DedicatedResourceInNode::operator+=(
     const DedicatedResourceInNode& rhs) {
-  for (const auto& [rhs_name, rhs_slots] : rhs.name_slots_map) {
-    this->name_slots_map[rhs_name].insert(rhs_slots.begin(), rhs_slots.end());
+  for (const auto& [rhs_name, rhs_type_slots_map] : rhs.name_type_slots_map) {
+    for (const auto& [rhs_type, rhs_slots] : rhs_type_slots_map)
+      this->name_type_slots_map[rhs_name][rhs_type].insert(rhs_slots.begin(),
+                                                           rhs_slots.end());
   }
   return *this;
 }
+
 DedicatedResourceInNode& DedicatedResourceInNode::operator-=(
     const DedicatedResourceInNode& rhs) {
-  for (const auto& [rhs_name, rhs_slots] : rhs.name_slots_map) {
-    auto& this_slot = this->name_slots_map[rhs_name];
-    std::set<DedicatedResourceInNode::SlotType> temp;
-    std::ranges::set_difference(this_slot, rhs_slots,
-                                std::inserter(temp, temp.begin()));
-    this_slot = std::move(temp);
+  for (const auto& [rhs_name, rhs_type_slots_map] : rhs.name_type_slots_map) {
+    auto& this_type_slots_map = this->name_type_slots_map.at(rhs_name);
+    for (const auto& [rhs_type, rhs_slots] : rhs_type_slots_map) {
+      std::set<SlotId> temp;
+      std::ranges::set_difference(this_type_slots_map.at(rhs_type), rhs_slots,
+                                  std::inserter(temp, temp.begin()));
+      this_type_slots_map.at(rhs_type) = std::move(temp);
+    }
   }
   return *this;
 }
 
-std::set<DedicatedResourceInNode::SlotType>&
+std::unordered_map<std::string, std::set<SlotId>>&
 DedicatedResourceInNode::operator[](const std::string& device_name) {
-  return this->name_slots_map[device_name];
+  return this->name_type_slots_map[device_name];
 }
-
-bool DedicatedResourceInNode::compareGE(
-    const std::unordered_map<
-        std::string,
-        std::pair<uint64_t, std::unordered_map<std::string, uint64_t>>>& other,
-    const std::unordered_map<DedicatedResourceInNode::SlotType, std::string>&
-        slot_2_type_map) const {
-  for (const auto& [name, total_type_count_pair] : other) {
-    const auto& [required_count, required_map] = total_type_count_pair;
-    if (!this->name_slots_map.contains(name)) {
-      if (required_count != 0) return false;
-    } else {
-      std::unordered_map<std::string, uint64_t> this_name_count_map;
-      const auto& this_slots = this->name_slots_map.at(name);
-      if (this_slots.size() < required_count) return false;
-      for (const auto& slot : this_slots)
-        this_name_count_map[slot_2_type_map.at(slot)]++;
-      for (const auto& [other_type, other_count] : required_map) {
-        if (this_name_count_map[other_type] < other_count) return false;
-      }
-    }
-  }
-  return true;
+bool DedicatedResourceInNode::contains(const std::string& device_name) const {
+  return this->name_type_slots_map.contains(device_name);
 }
