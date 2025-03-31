@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # 获取完整历史以便于 PR 操作
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install latest Clang-Format
         run: |
@@ -35,8 +36,7 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          branch_name=$(git rev-parse --abbrev-ref HEAD)
-          git checkout -B "$branch_name"
+          git checkout ${{ github.event.pull_request.head.ref }}
           git add .
           git commit -m "Apply Clang-Format"
-          git push origin "$branch_name"
+          git push origin ${{ github.event.pull_request.head.ref }}
