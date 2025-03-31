@@ -1,42 +1,35 @@
 name: Clang Format
 
+
 on:
+  push:
+    branches:
+      - master 
   pull_request:
+    branches:
+      - master
     types:
-      - labeled
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - edited
 
 jobs:
   format:
-    if: github.event.label.name == 'format'
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # 获取完整历史以便于 PR 操作
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install latest Clang-Format
         run: |
           sudo apt update
           sudo apt install -y clang-format
 
-      - name: Run Clang-Format
+      - name: Run Check Clang-Format
         run: |
-          find . -type f \( -name "*.cpp" -o -name "*.h" \) -exec clang-format -i {} +
-
-      - name: Check for changes
-        id: check_diff
-        run: |
-          git diff --quiet || echo "changes=true" >> $GITHUB_ENV
-
-      - name: Commit and push changes
-        if: env.changes == 'true'
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git checkout ${{ github.event.pull_request.head.ref }}
-          git add .
-          git commit -m "Apply Clang-Format"
-          git push origin ${{ github.event.pull_request.head.ref }}
+          find . -type f \( -name "*.cpp" -o -name "*.h" \) -exec clang-format -i {} --dry-run -Werror +
+          
