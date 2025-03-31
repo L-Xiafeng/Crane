@@ -29,6 +29,7 @@ jobs:
 
       - name: Run clang-format check
         run: |
+          set -e
           git diff --name-only origin/master...HEAD | while read -r file; do
             if [[ "$file" == *.cpp || "$file" == *.h ]]; then
               clang-format --dry-run --Werror "$file" --style=file || echo "File $file is not properly formatted"
