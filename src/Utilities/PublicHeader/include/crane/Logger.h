@@ -150,10 +150,7 @@
 #endif
 
 void InitLogger(spdlog::level::level_enum level,
-
-                const std::string &log_file_path)
-
-    ;
+                const std::string &log_file_path);
 
 // Custom type formatting
 namespace fmt {

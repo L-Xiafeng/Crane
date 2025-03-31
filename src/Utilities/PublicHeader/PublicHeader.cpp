@@ -441,7 +441,8 @@ TypeSlotsMap& TypeSlotsMap::operator+=(const TypeSlotsMap& rhs) {
 TypeSlotsMap& TypeSlotsMap::operator-=(const TypeSlotsMap& rhs) {
   for (const auto& [rhs_type, rhs_slots] : rhs.type_slots_map) {
     std::set<SlotId> temp;
-    std::ranges::set_difference(this->type_slots_map.at(rhs_type), rhs_slots,
+    std::ranges::set_difference(this->type_slots_map.at(rhs_type),
+                                rhs_slots,
                                 std::inserter(temp, temp.begin()));
     if (temp.empty())
       this->type_slots_map.erase(rhs_type);
@@ -475,7 +476,8 @@ TypeSlotsMap Intersection(const TypeSlotsMap& lhs, const TypeSlotsMap& rhs) {
     if (rhs_it == rhs.type_slots_map.end()) continue;
 
     std::set<SlotId> temp;
-    std::ranges::set_intersection(lhs_slots, rhs_it->second,
+    std::ranges::set_intersection(lhs_slots,
+                                  rhs_it->second,
                                   std::inserter(temp, temp.begin()));
     if (!temp.empty()) result.type_slots_map[lhs_type] = std::move(temp);
   }

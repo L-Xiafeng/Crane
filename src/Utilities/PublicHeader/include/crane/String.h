@@ -42,7 +42,8 @@ std::string ReadableMemory(uint64_t memory_bytes);
 bool ParseHostList(const std::string &host_str,
                    std::list<std::string> *host_list);
 
-bool FoundFirstNumberWithoutBrackets(const std::string &input, int *start,
+bool FoundFirstNumberWithoutBrackets(const std::string &input,
+                                     int *start,
                                      int *end);
 
 std::string RemoveBracketsWithoutDashOrComma(const std::string &input);

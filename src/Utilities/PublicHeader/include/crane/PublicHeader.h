@@ -105,7 +105,6 @@ constexpr std::array<std::string_view, uint16_t(crane::grpc::ErrCode_ARRAYSIZE)>
     CraneErrStrArr = {
         // 0 - 4
         "Success",
-
         "Invalid UID",
         "You are not a Crane user",
         "The specified user is invalid",
@@ -197,13 +196,12 @@ constexpr std::array<std::string_view, uint16_t(crane::grpc::ErrCode_ARRAYSIZE)>
 
         // 65 - 67
         "The current running job exceeds the QoS limit (MaxJobPerUser)",
-        "User has insufficient privilege"
-    };
-
+        "User has insufficient privilege"};
 }
 
 template <typename... Args>
-inline CraneRichError FormatRichErr(CraneErrCode code, const std::string& fmt,
+inline CraneRichError FormatRichErr(CraneErrCode code,
+                                    const std::string& fmt,
                                     Args&&... args) {
   CraneRichError rich_err;
 
