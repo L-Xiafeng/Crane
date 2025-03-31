@@ -35,6 +35,8 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
+          branch_name=$(git rev-parse --abbrev-ref HEAD)
+          git checkout -B "$branch_name"
           git add .
           git commit -m "Apply Clang-Format"
-          git push
+          git push origin "$branch_name"
