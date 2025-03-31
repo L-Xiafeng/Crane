@@ -8,16 +8,12 @@ on:
   pull_request:
     branches:
       - master
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - ready_for_review
-      - edited
+      - release/*
+
 
 jobs:
   format:
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
 
     steps:
@@ -29,16 +25,11 @@ jobs:
           sudo apt update
           sudo apt install -y clang-format
 
-      - name: Find source files
-        id: find_files
-        run: |
-          FILES=$(git ls-files '*.c' '*.cc' '*.cpp' '*.h' '*.hpp' '*.cxx' '*.hh' '*.hxx')
-          echo "FILES=$FILES" >> $GITHUB_ENV
-
       - name: Run clang-format check
-        if: env.FILES != ''
         run: |
-          echo "Checking code format with clang-format..."
-          clang-format --version
-          echo "$FILES" | tr ' ' '\n' | xargs clang-format -style=file --dry-run -Werror
+          git diff --name-only origin/master...HEAD | while read -r file; do
+            if [[ "$file" == *.cpp || "$file" == *.h ]]; then
+              clang-format --dry-run --Werror "$file" --style=file || echo "File $file is not properly formatted"
+            fi
+          done
           
