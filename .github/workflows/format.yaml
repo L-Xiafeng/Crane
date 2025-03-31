@@ -1,19 +1,17 @@
-name: Clang Format
-
+name: Clang Format Check
 
 on:
   push:
     branches:
-      - master 
+      - master
   pull_request:
     branches:
       - master
       - release/*
 
-
 jobs:
   format:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
     steps:
@@ -34,4 +32,3 @@ jobs:
               clang-format --dry-run --Werror "$file" --style=file
             fi
           done
-          
