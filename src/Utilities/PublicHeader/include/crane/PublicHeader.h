@@ -195,11 +195,6 @@ constexpr std::array<std::string_view, uint16_t(crane::grpc::ErrCode_ARRAYSIZE)>
         "No available node",
 
 
-
-
-
-
-
         // 65 - 67
         "The current running job exceeds the QoS limit (MaxJobPerUser)",
         "User has insufficient privilege"};
