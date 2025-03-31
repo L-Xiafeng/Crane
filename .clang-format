@@ -4,3 +4,16 @@ AllowAllArgumentsOnNextLine: false
 IndentPPDirectives: AfterHash
 IndentCaseLabels: false
 AllowShortBlocksOnASingleLine: Empty
+AlignTrailingComments: true
+BinPackArguments: false              # 禁止将函数参数紧凑排列
+BinPackParameters: false             # 禁止将函数参数紧凑排列
+
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterEnum: false
+  AfterStruct: false
+  AfterUnion: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
