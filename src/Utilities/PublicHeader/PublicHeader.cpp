@@ -166,8 +166,7 @@ DedicatedResourceInNode Intersection(const DedicatedResourceInNode& lhs,
     auto rhs_it = rhs.name_type_slots_map.find(lhs_name);
     if (rhs_it == rhs.name_type_slots_map.end()) continue;
 
-    TypeSlotsMap intersection =
-        Intersection(lhs_type_slots_map, rhs_it->second);
+    TypeSlotsMap intersection =Intersection(lhs_type_slots_map, rhs_it->second);
     if (!intersection.IsZero())
       result.name_type_slots_map[lhs_name] = std::move(intersection);
   }
@@ -394,8 +393,7 @@ void operator*=(DeviceMap& lhs, uint32_t rhs) {
 
 TypeSlotsMap::TypeSlotsMap(const crane::grpc::DeviceTypeSlotsMap& rhs) {
   for (const auto& [type, slots] : rhs.type_slots_map())
-    this->type_slots_map[type].insert(slots.slots().begin(),
-                                      slots.slots().end());
+    this->type_slots_map[type].insert(slots.slots().begin(), slots.slots().end());
 }
 
 TypeSlotsMap& TypeSlotsMap::operator=(
