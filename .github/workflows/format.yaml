@@ -29,7 +29,16 @@ jobs:
           sudo apt update
           sudo apt install -y clang-format
 
-      - name: Run Check Clang-Format
+      - name: Find source files
+        id: find_files
         run: |
-          find . -type f \( -name "*.cpp" -o -name "*.h" \) -exec clang-format -i {} --dry-run -Werror +
+          FILES=$(git ls-files '*.c' '*.cc' '*.cpp' '*.h' '*.hpp' '*.cxx' '*.hh' '*.hxx')
+          echo "FILES=$FILES" >> $GITHUB_ENV
+
+      - name: Run clang-format check
+        if: env.FILES != ''
+        run: |
+          echo "Checking code format with clang-format..."
+          clang-format --version
+          echo "$FILES" | tr ' ' '\n' | xargs clang-format -style=file --dry-run -Werror
           
