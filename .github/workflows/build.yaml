@@ -6,10 +6,10 @@ on:
   push:
     branches:
       - master
-  pull_request:
-    branches:
-      - master
-      - release/*
+  workflow_run:
+    workflows: [ "Auto Format" ]
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       frontend_branch:
@@ -24,7 +24,11 @@ env:
 
 jobs:
   build:
-    if: github.event.pull_request.draft == false
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      github.event_name == 'workflow_dispatch'
+
     runs-on: self-hosted
     defaults:
       run:
@@ -34,7 +38,7 @@ jobs:
       # Checkout repo
       - name: Checkout code
         uses: actions/checkout@v4
-        with: 
+        with:
           path: CraneSched
 
       # Checkout frontend
@@ -44,7 +48,7 @@ jobs:
           repository: PKUHPC/CraneSched-FrontEnd
           path: CraneSched-FrontEnd
           ref: ${{ inputs.frontend_branch }}
-      
+
       # Pull CI Image and Prepare
       - name: Pull CI Image
         run: |
@@ -121,7 +125,7 @@ jobs:
           path: output/${{ env.ARTIFACT_NAME_FRONTEND }}
           retention-days: 14
           if-no-files-found: error
-      
+
       - name: Upload plugin
         uses: actions/upload-artifact@v4
         with:
@@ -146,7 +150,7 @@ jobs:
             localhost/autotest
           podman exec autotest /bin/bash --login script/run.sh || echo "TEST_FAILED=true" >> $GITHUB_ENV
           podman stop autotest
-      
+
       # Upload AutoTest Results
       - name: Upload AutoTest Results
         uses: actions/upload-artifact@v4
