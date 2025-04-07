@@ -37,7 +37,7 @@ using Craned::g_config;
 using Craned::Partition;
 
 void ParseConfig(int argc, char** argv) {
-  cxxopts::Options options("craned");
+  cxxopts::Options   options("craned")  ;
 
   // clang-format off
   options.add_options()
