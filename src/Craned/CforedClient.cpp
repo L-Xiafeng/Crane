@@ -18,7 +18,7 @@
 
 #include "CforedClient.h"
 
-#include <cerrno>      
+#include <cerrno>
 
 #include "crane/String.h"
 namespace Craned {
